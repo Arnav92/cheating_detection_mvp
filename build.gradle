@@ -14,6 +14,8 @@ dependencies {
 }
 
 // Task to run telemetry scripts
+// Note: This task collects and syncs coding activity data for cheating detection.
+// It runs automatically before each compilation.
 task runTelemetry(type: Exec) {
     description = 'Runs sentinel.py and sync.py for telemetry collection'
     

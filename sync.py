@@ -53,6 +53,8 @@ def run_command(cmd, cwd=None, silent=True):
 def sync_telemetry():
     """
     Sync telemetry data to remote git repository.
+    Note: This requires git credentials configured for push access.
+    For production use, configure SSH keys or credential helper.
     """
     # Paths
     logs_dir = Path.home() / '.logs'
@@ -108,8 +110,11 @@ def sync_telemetry():
         if run_command(['git', 'push'], cwd=logs_dir, silent=True):
             print("Telemetry synced successfully.")
             # Clear local telemetry file after successful sync
-            with open(telemetry_file, 'w') as f:
-                json.dump([], f)
+            try:
+                with open(telemetry_file, 'w') as f:
+                    json.dump([], f)
+            except IOError as e:
+                print(f"Warning: Failed to clear telemetry file: {e}")
         else:
             print("Failed to push changes.")
     else:

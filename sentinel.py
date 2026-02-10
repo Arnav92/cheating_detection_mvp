@@ -36,7 +36,7 @@ def record_telemetry(chars_added=0, time_elapsed=1):
     
     # Create telemetry entry
     entry = {
-        'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+        'timestamp': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'user': get_username(),
         'chars_added': chars_added,
         'velocity': round(calculate_velocity(chars_added, time_elapsed), 2)
