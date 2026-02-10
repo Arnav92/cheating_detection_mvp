@@ -6,5 +6,7 @@ package com.cheating.detection;
 public class Main {
     public static void main(String[] args) {
         System.out.println("Cheating Detection MVP");
+
+        System.out.println("Running tests...");
     }
 }
