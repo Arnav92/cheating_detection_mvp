@@ -14,6 +14,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# Configuration
+SUSPICIOUS_VELOCITY_THRESHOLD = 50  # chars per second - threshold for flagging suspicious activity
+
+
 def get_username():
     """Get the current git username or system username."""
     try:
@@ -115,7 +119,7 @@ def main():
         chars_added = calculate_chars_added(old_content, current_content)
         time_delta = max(current_time - old_time, 1)  # Avoid division by zero
         velocity = chars_added / time_delta  # chars per second
-        is_suspicious = velocity > 50
+        is_suspicious = velocity > SUSPICIOUS_VELOCITY_THRESHOLD
         
         # Create telemetry entry
         entry = {
