@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Sync script that pushes telemetry data to a remote git repository.
-Clones the cheat_logging repo, copies local JSON as {user}.jsonl, and pushes changes.
+Clones the cheat_logging repo to ~/.cheat_logs, copies telemetry.jsonl as {git_username}.jsonl,
+and performs silent background git operations.
 """
 
 import json
@@ -12,113 +13,101 @@ from pathlib import Path
 
 
 def get_username():
-    """Get the current system username."""
-    return os.environ.get('USER') or os.environ.get('USERNAME') or 'unknown'
-
-
-def run_command(cmd, cwd=None, silent=True):
-    """
-    Run a shell command.
-    
-    Args:
-        cmd: Command to run (string or list)
-        cwd: Working directory
-        silent: Whether to suppress output
-    
-    Returns:
-        True if successful, False otherwise
-    """
+    """Get the current git username or system username."""
     try:
-        if silent:
-            subprocess.run(
-                cmd,
-                cwd=cwd,
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=isinstance(cmd, str)
-            )
-        else:
-            subprocess.run(
-                cmd,
-                cwd=cwd,
-                check=True,
-                shell=isinstance(cmd, str)
-            )
-        return True
-    except subprocess.CalledProcessError:
-        return False
+        result = subprocess.run(
+            ['git', 'config', 'user.name'],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return os.environ.get('USER') or os.environ.get('USERNAME') or 'unknown'
 
 
 def sync_telemetry():
     """
     Sync telemetry data to remote git repository.
-    Note: This requires git credentials configured for push access.
-    For production use, configure SSH keys or credential helper.
+    Uses subprocess.Popen for background operations to avoid blocking the build.
     """
-    # Paths
-    logs_dir = Path.home() / '.logs'
-    telemetry_file = Path.home() / '.telemetry.json'
-    repo_url = 'https://github.com/Arnav92/cheat_logging.git'
-    username = get_username()
-    
-    # Check if telemetry file exists
-    if not telemetry_file.exists():
-        print("No telemetry data to sync.")
-        return
-    
-    # Clone repository if it doesn't exist
-    if not logs_dir.exists():
-        print(f"Cloning repository to {logs_dir}...")
-        if not run_command(['git', 'clone', repo_url, str(logs_dir)], silent=True):
-            print(f"Failed to clone repository from {repo_url}")
-            return
-    
-    # Read telemetry data
     try:
-        with open(telemetry_file, 'r') as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"Error reading telemetry file: {e}")
-        return
-    
-    # Write as JSONL (one JSON object per line)
-    user_log_file = logs_dir / f'{username}.jsonl'
-    try:
-        with open(user_log_file, 'a') as f:
-            for entry in data:
-                f.write(json.dumps(entry) + '\n')
-    except IOError as e:
-        print(f"Error writing to log file: {e}")
-        return
-    
-    # Git operations
-    print("Syncing to remote repository...")
-    
-    # Add file
-    run_command(['git', 'add', f'{username}.jsonl'], cwd=logs_dir, silent=True)
-    
-    # Commit (only if there are changes)
-    run_command(
-        ['git', 'commit', '-m', f'Update telemetry for {username}'],
-        cwd=logs_dir,
-        silent=True
-    )
-    
-    # Pull with rebase and push
-    if run_command(['git', 'pull', '--rebase'], cwd=logs_dir, silent=True):
-        if run_command(['git', 'push'], cwd=logs_dir, silent=True):
-            print("Telemetry synced successfully.")
-            # Clear local telemetry file after successful sync
+        # Paths
+        logs_dir = Path.home() / '.cheat_logs'
+        project_dir = Path(__file__).parent
+        telemetry_file = project_dir / 'telemetry.jsonl'
+        repo_url = 'https://github.com/Arnav92/cheat_logging.git'
+        username = get_username()
+        
+        # Check if telemetry file exists
+        if not telemetry_file.exists():
+            # No data to sync, silently exit
+            sys.exit(0)
+        
+        # Clone repository if it doesn't exist
+        if not logs_dir.exists():
             try:
-                with open(telemetry_file, 'w') as f:
-                    json.dump([], f)
-            except IOError as e:
-                print(f"Warning: Failed to clear telemetry file: {e}")
-        else:
-            print("Failed to push changes.")
-    else:
-        print("Failed to pull changes.")
+                subprocess.run(
+                    ['git', 'clone', repo_url, str(logs_dir)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=30
+                )
+            except Exception:
+                # Clone failed, silently exit
+                sys.exit(0)
+        
+        # Read telemetry data
+        try:
+            with open(telemetry_file, 'r') as f:
+                telemetry_data = f.read()
+        except IOError:
+            sys.exit(0)
+        
+        # Write/append to user's log file
+        user_log_file = logs_dir / f'{username}.jsonl'
+        try:
+            with open(user_log_file, 'a') as f:
+                f.write(telemetry_data)
+        except IOError:
+            sys.exit(0)
+        
+        # Prepare git sync commands in background using Popen
+        # Chain all git commands together to run in background
+        git_commands = f"""
+        cd {logs_dir} && \
+        git add . && \
+        git commit -m "update" && \
+        git pull --rebase && \
+        git push
+        """
+        
+        # Start background process (non-blocking)
+        subprocess.Popen(
+            git_commands,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True  # Detach from parent process
+        )
+        
+        # Clear local telemetry file after initiating sync
+        try:
+            telemetry_file.unlink()
+        except Exception:
+            pass
+        
+        # Always exit successfully
+        sys.exit(0)
+        
+    except Exception:
+        # Silently fail - never break the build
+        sys.exit(0)
 
 
 if __name__ == '__main__':

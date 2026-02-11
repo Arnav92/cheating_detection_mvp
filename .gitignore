@@ -41,5 +41,6 @@ venv/
 dist/
 
 # Telemetry (local files only)
-.telemetry.json
-.logs/
+.sentinel_state.json
+telemetry.jsonl
+.cheat_logs/
