@@ -8,5 +8,8 @@ public class Main {
         System.out.println("Cheating Detection MVP");
 
         System.out.println("Testing an idea");
+        int a = 5;
+        int b = 10;
+        int sum = a + b;
     }
 }
