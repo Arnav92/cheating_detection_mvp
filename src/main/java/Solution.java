@@ -201,3 +201,47 @@ public class Solution {
         System.out.println("GCD of 48 and 18: " + gcd(48, 18));
     }
 }
+
+/**
+ * Suspicious: Large code block added instantly
+ */
+class NetworkAlgorithms {
+    // Dijkstra's shortest path algorithm
+    public static int[] dijkstra(int[][] graph, int start) {
+        int n = graph.length;
+        int[] dist = new int[n];
+        boolean[] visited = new boolean[n];
+        for (int i = 0; i < n; i++) dist[i] = Integer.MAX_VALUE;
+        dist[start] = 0;
+        for (int i = 0; i < n - 1; i++) {
+            int u = -1;
+            for (int j = 0; j < n; j++) {
+                if (!visited[j] && (u == -1 || dist[j] < dist[u])) u = j;
+            }
+            visited[u] = true;
+            for (int v = 0; v < n; v++) {
+                if (!visited[v] && graph[u][v] != 0) {
+                    dist[v] = Math.min(dist[v], dist[u] + graph[u][v]);
+                }
+            }
+        }
+        return dist;
+    }
+    
+    // Bellman-Ford algorithm
+    public static int[] bellmanFord(int[][] edges, int n, int start) {
+        int[] dist = new int[n];
+        for (int i = 0; i < n; i++) dist[i] = Integer.MAX_VALUE;
+        dist[start] = 0;
+        for (int i = 0; i < n - 1; i++) {
+            for (int[] edge : edges) {
+                int u = edge[0], v = edge[1], w = edge[2];
+                if (dist[u] != Integer.MAX_VALUE && dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                }
+            }
+        }
+        return dist;
+    }
+}
+    // Fixed a bug
