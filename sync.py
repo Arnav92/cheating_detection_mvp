@@ -75,33 +75,26 @@ def sync_telemetry():
         except IOError:
             sys.exit(0)
         
-        # Prepare git sync commands in background using Popen
-        # Use shlex.quote to safely escape the directory path
-        git_script = f"""#!/bin/bash
-cd {shlex.quote(str(logs_dir))} || exit 0
-git add . || exit 0
-git commit -m "update" || exit 0
-git pull --rebase || exit 0
-git push || exit 0
-"""
+        # Prepare git sync commands
+        sync_commands = [
+            ['git', '-C', str(logs_dir), 'add', '.'],
+            ['git', '-C', str(logs_dir), 'commit', '-m', 'update'],
+            ['git', '-C', str(logs_dir), 'pull', '--rebase'],
+            ['git', '-C', str(logs_dir), 'push'],
+        ]
         
-        # Write script to a temporary file
-        script_file = logs_dir / '.sync_script.sh'
+        # Execute sync commands synchronously (will block for a few seconds)
         try:
-            with open(script_file, 'w') as f:
-                f.write(git_script)
-            script_file.chmod(0o700)
+            for cmd in sync_commands:
+                subprocess.run(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=10
+                )
         except Exception:
-            sys.exit(0)
-        
-        # Start background process (non-blocking)
-        subprocess.Popen(
-            ['bash', str(script_file)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            stdin=subprocess.DEVNULL,
-            start_new_session=True  # Detach from parent process
-        )
+            # Silently ignore any git errors
+            pass
         
         # Clear local telemetry file after initiating sync
         try:

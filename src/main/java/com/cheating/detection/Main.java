@@ -7,7 +7,6 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Cheating Detection MVP");
 
-        System.out.println("Running tests again...");
-        System.out.println("Minor change added");
+        System.out.println("Testing an idea");
     }
 }
