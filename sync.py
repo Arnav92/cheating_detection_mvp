@@ -19,9 +19,7 @@ def get_username():
             ['git', 'config', 'user.name'],
             capture_output=True,
             text=True,
-            timeout=2,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            timeout=2
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
