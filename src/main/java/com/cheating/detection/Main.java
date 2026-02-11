@@ -8,5 +8,6 @@ public class Main {
         System.out.println("Cheating Detection MVP");
 
         System.out.println("Running tests again...");
+        System.out.println("Minor change added");
     }
 }
