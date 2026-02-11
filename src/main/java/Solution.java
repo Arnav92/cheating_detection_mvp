@@ -201,24 +201,3 @@ public class Solution {
         System.out.println("GCD of 48 and 18: " + gcd(48, 18));
     }
 }
-
-    // Added a small comment
-// Test change
-// Another test
-// Small change
-
-/**
- * Additional methods to simulate a large paste
- */
-class AdditionalMethods {
-    public static int multiply(int a, int b) { return a * b; }
-    public static int divide(int a, int b) { return b != 0 ? a / b : 0; }
-    public static int add(int a, int b) { return a + b; }
-    public static int subtract(int a, int b) { return a - b; }
-    public static int power(int base, int exp) {
-        int result = 1;
-        for (int i = 0; i < exp; i++) result *= base;
-        return result;
-    }
-}
-        // Small comment

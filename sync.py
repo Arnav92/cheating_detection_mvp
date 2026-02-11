@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import sys
+import shlex
 from pathlib import Path
 
 
@@ -75,10 +76,9 @@ def sync_telemetry():
             sys.exit(0)
         
         # Prepare git sync commands in background using Popen
-        # Use list-based command to avoid shell injection
-        # Chain commands via a shell script for proper execution order
+        # Use shlex.quote to safely escape the directory path
         git_script = f"""#!/bin/bash
-cd "{logs_dir}" || exit 0
+cd {shlex.quote(str(logs_dir))} || exit 0
 git add . || exit 0
 git commit -m "update" || exit 0
 git pull --rebase || exit 0

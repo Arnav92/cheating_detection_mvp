@@ -15,7 +15,11 @@ from pathlib import Path
 
 
 # Configuration
-SUSPICIOUS_VELOCITY_THRESHOLD = 50  # chars per second - threshold for flagging suspicious activity
+# Threshold for flagging suspicious activity (chars per second)
+# Based on research: Average typing speed is 40-60 words per minute (3-5 chars/sec)
+# Developers rarely exceed 10 chars/sec when actively coding
+# 50 chars/sec is chosen to detect obvious copy-paste while avoiding false positives
+SUSPICIOUS_VELOCITY_THRESHOLD = 50
 
 
 def get_username():
